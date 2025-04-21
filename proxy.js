@@ -1,15 +1,12 @@
 (() => {
-    // Core configuration (minified variable names)
     const k = {
-        p: 'https://geomasker.api.net/JSON/v6', // API endpoint
-        t: 5000, // Timeout (ms)
-        r: 3, // Max retries
-        v: '1.0.0' // Version
+        p: 'https://geomasker.api.net/JSON/v6',
+        t: 5000,
+        r: 3,
+        v: '1.0.0'
     };
 
-    // Binary encoding/decoding utilities
     const b = {
-        // Convert coordinates to binary string
         e: (x, y) => {
             const m = (n, p = 16) => {
                 let d = Math.abs(n * 1e6);
@@ -18,8 +15,6 @@
             };
             return m(x) + m(y);
         },
-        
-        // Convert binary string to coordinates
         d: (s) => {
             const u = (b, p = 16) => {
                 let n = parseInt(b.substr(1), 2) / 1e6;
@@ -32,21 +27,19 @@
         }
     };
 
-    // Proxy handler class
     class G {
         constructor() {
-            this.q = null; // Current proxy queue
-            this.c = {}; // Configuration cache
-            this.l = []; // Location pool
-            this.s = {}; // Session data
-            this.i = 0; // Proxy rotation index
+            this.q = null;
+            this.c = {};
+            this.l = [];
+            this.s = {};
+            this.i = 0;
             this.h = new Headers({
                 'X-GeoMasker-Version': k.v,
                 'Content-Type': 'application/json'
             });
         }
 
-        // Initialize with API key
         async j(a) {
             try {
                 this.h.set('Authorization', `Bearer ${a}`);
@@ -60,13 +53,11 @@
             }
         }
 
-        // Get current masked location
         g() {
             if (!this.s.l) return null;
             return b.d(this.s.l);
         }
 
-        // Set new masked location (binary string or coordinates)
         async w(l) {
             let n = Array.isArray(l) ? b.e(l[0], l[1]) : l;
             try {
@@ -79,24 +70,19 @@
             }
         }
 
-        // Fetch through proxy with geomasking
         async f(u, o = {}) {
             if (!this.q) await this._r();
-            
             const p = this.q[this.i++ % this.q.length];
             const t = { ...o, headers: this._m(o.headers) };
-            
             try {
                 const s = await fetch(u, {
                     ...t,
                     proxy: p,
                     signal: AbortSignal.timeout(k.t)
                 });
-                
                 if (s.headers.get('X-GeoMasker-Refresh')) {
                     await this._r();
                 }
-                
                 return s;
             } catch (e) {
                 console.warn(`Proxy ${p.ip} failed, rotating...`);
@@ -105,14 +91,12 @@
             }
         }
 
-        // Internal: refresh proxy pool
         async _r() {
             const r = await this._f(`${k.p}/proxies`);
             this.q = r.proxies;
             this.i = 0;
         }
 
-        // Internal: merge headers
         _m(h) {
             const m = new Headers(h);
             this.h.forEach((v, k) => m.set(k, v));
@@ -121,7 +105,6 @@
             return m;
         }
 
-        // Internal: fetch wrapper
         async _f(u, m = 'GET', d = null, a = 0) {
             try {
                 const r = await fetch(u, {
@@ -130,7 +113,6 @@
                     body: d ? JSON.stringify(d) : null,
                     signal: AbortSignal.timeout(k.t)
                 });
-                
                 if (!r.ok) throw new Error(`HTTP ${r.status}`);
                 return await r.json();
             } catch (e) {
@@ -141,6 +123,11 @@
                 throw e;
             }
         }
+    }
+
+    window.GeoMasker = new G();
+})();
+
     }
   
     window.GeoMasker = new G();
